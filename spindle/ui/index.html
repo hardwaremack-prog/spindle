@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spindle</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3CradialGradient id='a'%3E%3Cstop offset='.2' stop-color='%23ffd08a'/%3E%3Cstop offset='.6' stop-color='%23b79cff'/%3E%3Cstop offset='1' stop-color='%2363e3d6'/%3E%3C/radialGradient%3E%3C/defs%3E%3Ccircle cx='32' cy='32' r='30' fill='url(%23a)'/%3E%3Ccircle cx='32' cy='32' r='7' fill='%23121016'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0f0e12; --panel:#17151c; --panel2:#1e1b25; --line:#2c2834; --ink:#efeaf5; --dim:#9a93a6; --faint:#6b6476;
+  --amber:#ffb547; --amber-ink:#2a1a00; --good:#5fd6a0; --warn:#ffb547; --bad:#ff6b7d; --violet:#b79cff;
+  --disc:conic-gradient(from 20deg,#ffd08a,#ff9fb5,#b79cff,#7fb6ff,#63e3d6,#c7f08c,#ffd08a);
+  --r:14px; --mono:ui-monospace,"Cascadia Mono","JetBrains Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#f6f3ee; --panel:#fffdf9; --panel2:#f1ece4; --line:#e3dbcf; --ink:#1d1a22; --dim:#6b6474; --faint:#9a92a2;
+  --amber:#e08a00; --amber-ink:#fff; --good:#1f9e6a; --warn:#c77700; --bad:#d23a50; --violet:#6a4fd8;}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,Roboto,Ubuntu,sans-serif;
+  display:grid;grid-template-rows:auto 1fr auto;min-height:100vh}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:7px 10px;min-width:0}
+input:focus,select:focus{outline:2px solid color-mix(in srgb,var(--amber) 60%,transparent);outline-offset:-1px;border-color:transparent}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:600}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--amber);color:var(--amber-ink);border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--dim)}
+.btn.ghost:hover{color:var(--ink);background:var(--panel2)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.sm{padding:5px 10px;font-size:13px}
+
+header{display:flex;align-items:center;gap:14px;padding:14px 22px;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;letter-spacing:-.02em}
+.logo .mini{width:26px;height:26px;border-radius:50%;background:var(--disc);position:relative;box-shadow:0 0 18px -4px #b79cff88}
+.logo .mini::after{content:"";position:absolute;inset:9px;border-radius:50%;background:var(--bg)}
+.busy .logo .mini{animation:spin 1.1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tag{font-size:12px;color:var(--dim);font-weight:500}
+.spacer{flex:1}
+.pill{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--dim);font-size:13px;max-width:46vw}
+.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:none}
+.busy .pill .dot{background:var(--amber);box-shadow:0 0 0 4px color-mix(in srgb,var(--amber) 25%,transparent)}
+
+.wrap{display:grid;grid-template-columns:290px 1fr;min-height:0}
+aside{border-right:1px solid var(--line);padding:18px;display:flex;flex-direction:column;gap:22px;overflow:auto}
+h3{margin:0 0 10px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.drive{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
+.drive .top{display:flex;align-items:center;gap:10px}
+.drive .ic{width:34px;height:34px;border-radius:50%;flex:none;background:var(--panel2);border:1px solid var(--line);position:relative}
+.drive.has .ic{background:var(--disc)}
+.drive .ic::after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--panel)}
+.drive b{display:block}
+.drive small{color:var(--dim)}
+.drive .acts{display:flex;gap:6px}
+.drive .acts .btn{flex:1}
+.empty-note{color:var(--dim);font-size:13px;background:var(--panel);border:1px dashed var(--line);border-radius:var(--r);padding:12px}
+.hist{display:flex;flex-direction:column;gap:6px}
+.hist div{font-size:13px;color:var(--dim);padding:8px 10px;background:var(--panel);border-radius:10px;cursor:pointer}
+.hist div b{color:var(--ink);font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+main{overflow:auto;padding:22px 26px 40px;min-width:0}
+.hero{display:grid;place-items:center;text-align:center;padding:60px 10px;gap:18px}
+.bigdisc{width:min(300px,60vw);aspect-ratio:1;border-radius:50%;background:var(--disc);position:relative;
+  box-shadow:0 30px 80px -30px #b79cff66, inset 0 0 0 1px #ffffff22;animation:spin 14s linear infinite}
+.bigdisc::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:repeating-radial-gradient(circle,#0000 0 3px,#00000012 3px 4px),radial-gradient(circle,#fff5 0,#0000 60%);mix-blend-mode:overlay}
+.bigdisc::after{content:"";position:absolute;inset:39%;border-radius:50%;background:var(--bg);box-shadow:0 0 0 14px #ffffff18}
+.hero h1{margin:6px 0 0;font-size:30px;letter-spacing:-.03em}
+.hero p{margin:0;color:var(--dim);max-width:520px}
+.feat{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px}
+.feat span{font-size:12px;padding:5px 10px;border-radius:99px;background:var(--panel);border:1px solid var(--line);color:var(--dim)}
+
+.steps{display:flex;align-items:center;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+.step{display:flex;align-items:center;gap:8px;color:var(--faint);font-weight:600;font-size:13px}
+.step i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;border:1px solid var(--line)}
+.step.on{color:var(--ink)} .step.on i{background:var(--amber);color:var(--amber-ink);border-color:transparent}
+.step.done{color:var(--dim)} .step.done i{background:var(--panel2);color:var(--good)}
+.step+.step::before{content:"";width:22px;height:1px;background:var(--line);margin-right:2px}
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.bar .src{font-size:13px;color:var(--dim)}
+.bar .src b{color:var(--ink)}
+
+.group{background:var(--panel);border:1px solid var(--line);border-radius:18px;margin-bottom:18px;overflow:hidden}
+.ghead{display:grid;grid-template-columns:150px 1fr;gap:18px;padding:18px;border-bottom:1px solid var(--line)}
+.art{width:150px;height:150px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);position:relative;overflow:hidden;cursor:pointer;display:grid;place-items:center;color:var(--faint);font-size:12px;text-align:center}
+.art img{width:100%;height:100%;object-fit:cover;display:block}
+.art .chg{position:absolute;inset:auto 0 0 0;padding:6px;font-size:12px;background:#000a;color:#fff;opacity:0;transition:.15s}
+.art:hover .chg{opacity:1}
+.fields{display:grid;grid-template-columns:1fr 1fr 90px 1fr;gap:8px 10px;align-content:start}
+.fields label{display:flex;flex-direction:column;gap:4px;font-size:11px;color:var(--faint);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.fields .wide{grid-column:span 2}
+.meta{grid-column:1/-1;display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:4px}
+.chip{font-size:12px;padding:3px 9px;border-radius:99px;background:var(--panel2);color:var(--dim);border:1px solid var(--line)}
+.chip.good{color:var(--good)} .chip.warn{color:var(--warn)} .chip.bad{color:var(--bad)}
+.toggle{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--dim);cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--amber);width:16px;height:16px}
+.fields label.toggle{flex-direction:row;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--dim)}
+
+table{width:100%;border-collapse:collapse}
+td,th{padding:6px 8px;text-align:left;vertical-align:middle}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);font-weight:700;padding-top:12px}
+tr.off td{opacity:.42}
+tbody tr{border-top:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+td input{width:100%;background:transparent;border-color:transparent;padding:5px 8px}
+td input:hover{border-color:var(--line)}
+td.n{width:62px} td.n input{text-align:right;font-family:var(--mono);color:var(--dim)}
+td.t{width:66px;font-family:var(--mono);color:var(--dim);font-size:13px;text-align:right}
+td.c{width:30px} td.chk{width:34px;padding-left:16px} td.p{width:40px}
+.conf{width:10px;height:10px;border-radius:50%;display:inline-block}
+.notes{font-size:12px;color:var(--dim);padding:0 8px 6px 70px}
+.notes .w{color:var(--warn)}
+.play{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:transparent;display:grid;place-items:center;color:var(--dim)}
+.play:hover{color:var(--ink);border-color:var(--faint)}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--dim);padding:10px 18px 14px}
+.legend span{display:flex;align-items:center;gap:6px}
+
+footer{border-top:1px solid var(--line);background:var(--panel)}
+.prog{height:3px;background:var(--panel2)}
+.prog div{height:100%;background:linear-gradient(90deg,var(--amber),var(--violet));width:0;transition:width .4s}
+.foot{display:flex;align-items:center;gap:10px;padding:6px 16px;font-size:12px;color:var(--dim)}
+.foot .last{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#log{max-height:0;overflow:auto;transition:max-height .2s;font-family:var(--mono);font-size:12px;padding:0 16px}
+#log.open{max-height:230px;padding:6px 16px 12px}
+#log div{padding:2px 0;color:var(--dim)} #log .warn{color:var(--warn)} #log .error{color:var(--bad)} #log .good{color:var(--good)}
+#log time{color:var(--faint);margin-right:8px}
+
+dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--ink);padding:0;width:min(640px,94vw);max-height:88vh}
+dialog::backdrop{background:#0009;backdrop-filter:blur(3px)}
+.dh{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.dh h2{margin:0;font-size:17px;flex:1}
+.db{padding:18px 20px;overflow:auto;max-height:66vh;display:flex;flex-direction:column;gap:14px}
+.df{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:170px 1fr;gap:12px;align-items:center}
+.row>span{color:var(--dim);font-size:13px}
+.row small{grid-column:2;color:var(--faint);font-size:12px;margin-top:-8px}
+.sec{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-top:6px}
+.artgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.artgrid button{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:0;overflow:hidden;text-align:left}
+.artgrid img{width:100%;aspect-ratio:1;object-fit:cover;display:block}
+.artgrid small{display:block;padding:5px 7px;font-size:11px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fl{display:flex;flex-direction:column;gap:4px;max-height:340px;overflow:auto}
+.fl button{text-align:left;background:transparent;border:0;padding:8px 10px;border-radius:8px}
+.fl button:hover{background:var(--panel2)}
+.done-card{background:color-mix(in srgb,var(--good) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--good) 40%,var(--line));border-radius:14px;padding:14px 16px;margin-bottom:18px;display:flex;align-items:center;gap:12px}
+.done-card b{flex:1}
+.warnbar{background:color-mix(in srgb,var(--warn) 12%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 35%,var(--line));border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px}
+@media (max-width:900px){.wrap{grid-template-columns:1fr} aside{border-right:0;border-bottom:1px solid var(--line)}
+  .ghead{grid-template-columns:1fr} .fields{grid-template-columns:1fr 1fr} .fields .wide{grid-column:span 2} td.t,td.p{display:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="mini"></div>Spindle <span class="tag">smart CD ripper</span></div>
+  <div class="spacer"></div>
+  <div class="pill"><i class="dot"></i><span id="status">Starting...</span></div>
+  <button class="btn ghost" id="stopBtn" hidden>Stop</button>
+  <button class="btn ghost" onclick="openSettings()">Settings</button>
+</header>
+
+<div class="wrap">
+  <aside>
+    <section><h3>Drives</h3><div id="drives"></div></section>
+    <section><h3>Or a folder</h3>
+      <div class="empty-note" style="display:flex;flex-direction:column;gap:8px">
+        Already copied a disc to your computer, or have a pile of messy MP3s? Spindle can clean those up too.
+        <button class="btn" onclick="openBrowse('scan')">Choose a folder...</button>
+      </div></section>
+    <section><h3>Recent</h3><div class="hist" id="hist"></div></section>
+  </aside>
+  <main id="main"></main>
+</div>
+
+<footer>
+  <div class="prog"><div id="progbar"></div></div>
+  <div class="foot"><span class="last" id="lastlog"></span><button class="btn ghost sm" onclick="toggleLog()">Activity</button></div>
+  <div id="log"></div>
+</footer>
+
+<dialog id="settings">
+  <div class="dh"><h2>Settings</h2><button class="btn ghost" onclick="settings.close()">Close</button></div>
+  <div class="db" id="setbody"></div>
+  <div class="df"><button class="btn primary" onclick="saveSettings()">Save</button></div>
+</dialog>
+
+<dialog id="artdlg">
+  <div class="dh"><h2>Album art</h2><button class="btn ghost" onclick="artdlg.close()">Close</button></div>
+  <div class="db">
+    <div style="display:flex;gap:8px"><input id="artq" style="flex:1" placeholder="Search covers (artist + album)"><button class="btn" onclick="artSearch()">Search</button></div>
+    <div class="artgrid" id="artres"></div>
+    <div class="sec">Or</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn">Upload an image<input type="file" accept="image/*" hidden onchange="artUpload(this.files[0])"></label>
+      <input id="arturl" style="flex:1;min-width:200px" placeholder="Paste an image link"><button class="btn" onclick="artUrl()">Use link</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="browse">
+  <div class="dh"><h2 id="brtitle">Choose a folder</h2><button class="btn ghost" onclick="browse.close()">Close</button></div>
+  <div class="db"><div class="src" id="brpath" style="font-family:var(--mono);font-size:12px;color:var(--dim)"></div><div class="fl" id="brlist"></div></div>
+  <div class="df"><button class="btn primary" id="brpick">Use this folder</button></div>
+</dialog>
+
+<audio id="player"></audio>
+
+<script>
+const $ = s => document.querySelector(s);
+let S = null, lastSess = "", lastDrives = "", artGroup = null, browseMode = null, browsePath = "";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt = s => { s = Math.round(s||0); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); };
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)};
+  const r = await fetch(path, opt); const j = await r.json().catch(()=>({}));
+  if (!r.ok) { toastErr(j.error || "Something went wrong"); throw new Error(j.error); }
+  return j;
+}
+function toastErr(m){ $("#lastlog").innerHTML = '<span style="color:var(--bad)">'+esc(m)+'</span>'; }
+
+async function refresh() {
+  try { S = await (await fetch("/api/state")).json(); render(); } catch(e) { $("#status").textContent = "Spindle isn't running"; }
+}
+async function poll() { await refresh(); setTimeout(poll, S && S.job.running ? 600 : 1500); }
+
+function render() {
+  const busy = S.job.running;
+  document.body.classList.toggle("busy", busy);
+  $("#status").textContent = S.job.msg || "Ready";
+  $("#stopBtn").hidden = !busy;
+  $("#progbar").style.width = (busy || S.job.pct ? S.job.pct*100 : 0) + "%";
+  const last = S.log[S.log.length-1]; if (last) $("#lastlog").textContent = last.msg;
+  if ($("#log").classList.contains("open")) renderLog();
+
+  const dk = JSON.stringify(S.drives) + busy;
+  if (dk !== lastDrives) { lastDrives = dk; renderDrives(); }
+  $("#hist").innerHTML = S.history.slice().reverse().map(h =>
+    `<div onclick='api("/api/open",{path:${JSON.stringify(h.folder)}})' title="Open folder"><b>${esc(h.albums.join(", "))}</b>${h.tracks} tracks · ${esc(h.t)}</div>`).join("") || '<div style="cursor:default">Nothing yet</div>';
+
+  const sk = JSON.stringify(S.session) + busy + JSON.stringify(S.tools);
+  if (sk !== lastSess) { lastSess = sk; renderMain(); }
+}
+
+function renderDrives() {
+  const busy = S.job.running;
+  $("#drives").innerHTML = S.drives.length ? S.drives.map(d => `
+    <div class="drive ${d.media?"has":""}">
+      <div class="top"><div class="ic"></div><div><b>${esc(d.id)}</b><small>${d.media ? esc(d.label || "Disc inserted") : "Empty"}</small></div></div>
+      <div class="acts">
+        <button class="btn sm primary" ${!d.media||busy?"disabled":""} onclick='go("/api/scan",{source:${JSON.stringify(d.id)}})'>Scan</button>
+        <button class="btn sm" ${!d.media||busy?"disabled":""} onclick='go("/api/auto",{source:${JSON.stringify(d.id)}})' title="Scan, rip, identify and finish in one go">Do it all</button>
+        <button class="btn sm ghost" onclick='api("/api/eject",{drive:${JSON.stringify(d.id)}})'>Eject</button>
+      </div>
+    </div>`).join("") : '<div class="empty-note">No CD/DVD drive found. Plug in a USB drive and it will show up here.</div>';
+}
+
+async function go(path, body){ await api(path, body||{}); setTimeout(refresh, 150); }
+
+function confColor(c){ return c >= .85 ? "var(--good)" : c >= .6 ? "var(--violet)" : c >= .35 ? "var(--warn)" : "var(--bad)"; }
+
+function renderMain() {
+  const m = $("#main"), s = S.session, busy = S.job.running;
+  const focus = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.k;
+  const sel = focus ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
+  let toolWarn = "";
+  if (!S.tools.ffmpeg) toolWarn = `<div class="warnbar">ffmpeg wasn't found. Run the setup script (or put ffmpeg in the <b>tools</b> folder) so Spindle can write your files.</div>`;
+  if (!s) {
+    m.innerHTML = toolWarn + `<div class="hero"><div class="bigdisc"></div>
+      <h1>Pop in a disc.</h1>
+      <p>Spindle reads burnt CDs (audio or MP3 data discs), works out what every track actually is, evens out the volume, names and tags everything properly, and adds album art.</p>
+      <div class="feat"><span>Scratch-tolerant ripping</span><span>Identifies by sound</span><span>Fixes messy names</span><span>Loudness levelling</span><span>Cover art & mix mosaics</span><span>Duplicate spotting</span></div></div>`;
+    return;
+  }
+  const st = s.stage, audio = s.source.kind === "audio";
+  const order = audio ? ["scanned","ripped","identified","done"] : ["scanned","identified","done"];
+  const labels = {scanned:"Scan", ripped:"Rip", identified:"Identify", done:"Finish"};
+  const idx = order.indexOf(st);
+  const steps = order.map((k,i) => `<div class="step ${i<idx?"done":i===idx?"on":""}"><i>${i<idx||(i===idx&&k==="done")?"✓":i+1}</i>${labels[k]}</div>`).join("");
+  let next = "";
+  if (st === "scanned") next = audio
+      ? `<button class="btn primary" ${busy?"disabled":""} onclick='go("/api/identify")'>Rip & identify</button>`
+      : `<button class="btn primary" ${busy?"disabled":""} onclick='go("/api/identify")'>Identify tracks</button>`;
+  else if (st === "ripped") next = `<button class="btn primary" ${busy?"disabled":""} onclick='go("/api/identify")'>Identify tracks</button>`;
+  else if (st === "identified") next = `<button class="btn primary" ${busy?"disabled":""} onclick='go("/api/finish")'>Looks good — finish</button>`;
+  const fmtName = {flac:"FLAC",mp3:"MP3",m4a:"AAC",opus:"Opus"}[S.settings.format];
+  const src = s.source;
+  let html = toolWarn + `<div class="steps">${steps}</div>
+    <div class="bar"><div class="src">From <b>${esc(src.label || src.path || src.drive)}</b> · ${audio ? "audio CD" : src.kind==="data" ? "data disc" : "folder"}${src.discid ? ` · <span style="font-family:var(--mono)">${esc(src.discid)}</span>`:""}</div>
+      <div class="spacer"></div>
+      ${st!=="done" ? `<span class="chip">${fmtName} · ${S.settings.loudness==="off"?"no levelling":S.settings.loudness+" levelling"}</span>`:""}
+      <button class="btn ghost" ${busy?"disabled":""} onclick='go("/api/clear")'>Close</button>${next}</div>`;
+  if (st === "done" && s.output_folders) html += s.output_folders.map(f =>
+      `<div class="done-card"><span style="font-size:20px">✓</span><b>Saved to ${esc(f)}</b><button class="btn" onclick='api("/api/open",{path:${JSON.stringify(f)}})'>Open folder</button></div>`).join("");
+
+  for (const g of s.groups) {
+    const conf = g.confidence;
+    const confChip = st === "scanned" && !audio ? "" : st==="scanned"||st==="ripped" ? "" :
+      `<span class="chip ${conf>=.75?"good":conf>=.5?"warn":"bad"}">${conf>=.75?"Confident":conf>=.5?"Worth a look":"Needs your help"} · ${Math.round(conf*100)}%</span>`;
+    const total = g.tracks.filter(t=>t.include).reduce((a,t)=>a+t.duration,0);
+    html += `<section class="group" data-g="${g.id}">
+      <div class="ghead">
+        <div class="art" onclick='openArt(${JSON.stringify(g.id)})'>${g.art ? `<img src="/api/art?g=${g.id}&v=${encodeURIComponent(g.art)}" alt="">` : "No art yet<br>click to add"}<div class="chg">Change art</div></div>
+        <div class="fields">
+          <label class="wide">Album<input data-k="g:${g.id}:album" value="${esc(g.album)}" placeholder="${esc(g.label||"Album")}"></label>
+          <label>Year<input data-k="g:${g.id}:year" value="${esc(g.year)}" placeholder="—"></label>
+          <label>Genre<input data-k="g:${g.id}:genre" value="${esc(g.genre)}" placeholder="—"></label>
+          <label class="wide">Album artist<input data-k="g:${g.id}:albumartist" value="${esc(g.albumartist)}" placeholder="Artist"></label>
+          <label>Disc<input data-k="g:${g.id}:disc" value="${esc(g.disc)}"></label>
+          <label>of<input data-k="g:${g.id}:discs" value="${esc(g.discs)}"></label>
+          <div class="meta">
+            <label class="toggle"><input type="checkbox" data-k="g:${g.id}:compilation" ${g.compilation?"checked":""}>Mix / various artists</label>
+            ${confChip}
+            <span class="chip">${g.tracks.filter(t=>t.include).length} tracks · ${fmt(total)}</span>
+            ${g.art_source ? `<span class="chip">Art: ${esc(g.art_source)}</span>` : ""}
+          </div>
+        </div>
+      </div>
+      <table><thead><tr><th class="chk"></th><th style="text-align:right">#</th><th>Title</th><th>Artist</th><th style="text-align:right">Time</th><th></th><th></th></tr></thead><tbody>`;
+    for (const t of g.tracks) {
+      const canPlay = t.out || t.rip || t.src;
+      html += `<tr class="${t.include?"":"off"}">
+        <td class="chk"><input type="checkbox" class="toggle" data-k="t:${g.id}:${t.id}:include" ${t.include?"checked":""} style="accent-color:var(--amber)"></td>
+        <td class="n"><input data-k="t:${g.id}:${t.id}:n" value="${t.n??""}"></td>
+        <td><input data-k="t:${g.id}:${t.id}:title" value="${esc(t.title)}" placeholder="${st==="scanned"?"Unknown yet":"Name this track"}"></td>
+        <td><input data-k="t:${g.id}:${t.id}:artist" value="${esc(t.artist)}" placeholder="Artist"></td>
+        <td class="t">${fmt(t.duration)}</td>
+        <td class="c">${t.how ? `<span class="conf" style="background:${confColor(t.confidence)}" title="${esc(t.how)} · ${Math.round(t.confidence*100)}% sure"></span>`:""}</td>
+        <td class="p">${canPlay?`<button class="play" title="Preview" onclick='play(${JSON.stringify(g.id)},${JSON.stringify(t.id)},this)'>▶</button>`:""}</td></tr>`;
+      if (t.notes && t.notes.length) html += `<tr class="${t.include?"":"off"}" style="border-top:0"><td colspan="7" class="notes">${t.notes.map(n=>`<span class="${/scratch|Couldn't|duplicate/i.test(n)?"w":""}">${esc(n)}</span>`).join(" · ")}</td></tr>`;
+    }
+    html += `</tbody></table>
+      <div class="legend"><span><i class="conf" style="background:var(--good)"></i>Sure</span><span><i class="conf" style="background:var(--violet)"></i>Likely</span><span><i class="conf" style="background:var(--warn)"></i>Guess</span><span><i class="conf" style="background:var(--bad)"></i>Unknown</span><span style="margin-left:auto">Click any name to fix it.</span></div>
+    </section>`;
+  }
+  m.innerHTML = html;
+  m.querySelectorAll("[data-k]").forEach(el => el.addEventListener("change", onEdit));
+  if (focus) { const el = m.querySelector(`[data-k="${focus}"]`); if (el) { el.focus(); try{el.setSelectionRange(...sel)}catch(e){} } }
+}
+
+async function onEdit(e) {
+  const el = e.target, k = el.dataset.k.split(":");
+  const val = el.type === "checkbox" ? el.checked : el.value;
+  let body;
+  if (k[0] === "g") {
+    let v = val; if (k[2]==="disc"||k[2]==="discs") v = parseInt(val)||1;
+    body = {groups:[{id:k[1], [k[2]]: v}]};
+  } else body = {groups:[{id:k[1], tracks:[{id:k[2], [k[3]]: val}]}]};
+  await api("/api/edit", body); refresh();
+}
+
+let playing = null;
+function play(g, t, btn) {
+  const a = $("#player");
+  if (playing === t && !a.paused) { a.pause(); btn.textContent = "▶"; return; }
+  document.querySelectorAll(".play").forEach(b => b.textContent = "▶");
+  a.src = `/api/preview?g=${g}&t=${t}`; a.play(); playing = t; btn.textContent = "❚❚";
+  a.onended = () => btn.textContent = "▶";
+}
+
+function toggleLog(){ $("#log").classList.toggle("open"); renderLog(); }
+function renderLog(){ const l=$("#log"); l.innerHTML = S.log.map(x=>`<div class="${x.level}"><time>${x.t}</time>${esc(x.msg)}</div>`).join(""); l.scrollTop = l.scrollHeight; }
+$("#stopBtn").onclick = () => api("/api/stop", {});
+
+// ---- art
+function openArt(g){ artGroup = g; const grp = S.session.groups.find(x=>x.id===g);
+  $("#artq").value = (grp.albumartist==="Various Artists"?"":grp.albumartist+" ") + grp.album; $("#artres").innerHTML=""; artdlg.showModal(); artSearch(); }
+async function artSearch(){ $("#artres").innerHTML = '<small style="color:var(--dim)">Searching...</small>';
+  const r = await api("/api/art/search?q="+encodeURIComponent($("#artq").value));
+  $("#artres").innerHTML = r.results.length ? r.results.map(x=>`<button onclick='pickArt(${JSON.stringify(x.url)})'><img src="${esc(x.thumb)}" alt=""><small>${esc(x.label)}</small></button>`).join("")
+    : '<small style="color:var(--dim)">No covers found (are you offline?). Upload one instead.</small>'; }
+async function pickArt(url){ await api("/api/art/url",{g:artGroup,url}); artdlg.close(); lastSess=""; refresh(); }
+async function artUrl(){ await pickArt($("#arturl").value.trim()); }
+async function artUpload(f){ if(!f) return; await fetch("/api/art/upload?g="+artGroup,{method:"POST",body:await f.arrayBuffer()}); artdlg.close(); lastSess=""; refresh(); }
+
+// ---- folders
+async function openBrowse(mode, start){ browseMode = mode; $("#brtitle").textContent = mode==="scan" ? "Choose a folder of music" : "Where should finished music go?";
+  browse.showModal(); loadDir(start || ""); }
+async function loadDir(p){ const r = await api("/api/browse?path="+encodeURIComponent(p)); browsePath = r.path;
+  $("#brpath").textContent = r.path || "Pick a starting place";
+  $("#brpick").disabled = !r.path;
+  $("#brlist").innerHTML = (r.parent!==null && r.path ? `<button onclick='loadDir(${JSON.stringify(r.parent)})'>⬑ Up</button>` : "") +
+    r.dirs.map(d=>`<button onclick='loadDir(${JSON.stringify(d.path)})'>📁 ${esc(d.name)}</button>`).join(""); }
+$("#brpick").onclick = async () => { browse.close();
+  if (browseMode === "scan") go("/api/scan",{source:browsePath}); else { $("#s_output_dir").value = browsePath; } };
+
+// ---- settings
+function openSettings(){ const s = S.settings;
+  const sel = (k,opts) => `<select id="s_${k}">${opts.map(([v,l])=>`<option value="${v}" ${String(s[k])===String(v)?"selected":""}>${l}</option>`).join("")}</select>`;
+  const chk = (k,l) => `<label class="toggle"><input type="checkbox" id="s_${k}" ${s[k]?"checked":""}>${l}</label>`;
+  $("#setbody").innerHTML = `
+  <div class="sec">Output</div>
+  <div class="row"><span>Save music to</span><div style="display:flex;gap:6px"><input id="s_output_dir" style="flex:1" value="${esc(s.output_dir)}"><button class="btn" onclick='openBrowse("out",$("#s_output_dir").value)'>Browse</button></div></div>
+  <div class="row"><span>Format</span>${sel("format",[["flac","FLAC — lossless, best quality"],["mp3","MP3 — plays everywhere"],["m4a","AAC (.m4a) — Apple friendly"],["opus","Opus — smallest files"]])}</div>
+  <div class="row"><span>MP3 quality</span>${sel("mp3_mode",[["v0","V0 variable (recommended)"],["320","320 kbps constant"]])}</div>
+  <div class="row"><span></span>${chk("keep_lossy","Don't re-encode MP3/AAC files from data discs")}<small>Re-encoding lossy files only loses quality. They're re-tagged and get ReplayGain volume tags instead.</small></div>
+  <div class="row"><span>Album folders</span><input id="s_album_template" value="${esc(s.album_template)}"></div>
+  <div class="row"><span>Mix CD folders</span><input id="s_mix_template" value="${esc(s.mix_template)}"><small>{albumartist} {album} {year} {disc} {track:02} {artist} {title} {genre}</small></div>
+  <div class="row"><span></span>${chk("save_cover_file","Also save cover.jpg in each folder")}</div>
+  <div class="row"><span></span>${chk("playlist","Make a playlist (.m3u8) for each album")}</div>
+  <div class="sec">Clean-up</div>
+  <div class="row"><span>Volume levelling</span>${sel("loudness",[["auto","Smart — album gain for albums, track gain for mixes"],["album","Album gain (keeps quiet songs quiet)"],["track","Track gain (every song equally loud)"],["replaygain","Tags only (ReplayGain, audio untouched)"],["off","Off"]])}</div>
+  <div class="row"><span>Target loudness</span>${sel("target_lufs",[[-14,"-14 LUFS (Spotify / YouTube)"],[-16,"-16 LUFS (Apple Music)"],[-18,"-18 LUFS (ReplayGain, most dynamic)"],[-11,"-11 LUFS (loud, for the car)"]])}</div>
+  <div class="row"><span></span>${chk("fix_case","Fix SHOUTING or lowercase titles")}</div>
+  <div class="sec">Identifying</div>
+  <div class="row"><span>AcoustID key</span><input id="s_acoustid_key" value="${esc(s.acoustid_key)}" placeholder="Optional — free at acoustid.org/new-application"><small>Lets Spindle recognise songs by their sound, even on a disc with no names at all. ${S.tools.fpcalc?"":"Also needs fpcalc (the setup script installs it)."}</small></div>
+  <div class="row"><span></span>${chk("offline","Offline mode (no lookups)")}</div>
+  <div class="sec">Automatic</div>
+  <div class="row"><span></span>${chk("auto_mode","Auto mode: start as soon as a disc goes in")}</div>
+  <div class="row"><span>Finish on its own when</span>${sel("auto_confidence",[[0.9,"Very sure (90%+)"],[0.75,"Fairly sure (75%+)"],[0.5,"Somewhat sure (50%+)"],[0,"Always"]])}</div>
+  <div class="row"><span></span>${chk("auto_eject","Eject the disc when done")}</div>`;
+  settings.showModal(); }
+async function saveSettings(){ const s = {};
+  for (const k of Object.keys(S.settings)) { const el = $("#s_"+k); if (!el) continue;
+    s[k] = el.type==="checkbox" ? el.checked : (k==="target_lufs"||k==="auto_confidence") ? parseFloat(el.value) : el.value; }
+  await api("/api/settings", s); settings.close(); lastSess=""; refresh(); }
+
+poll();
+</script>
+</body>
+</html>
